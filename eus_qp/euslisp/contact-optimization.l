@@ -629,7 +629,9 @@
                 (list (calc-constraint-param-list-for-translational-sliding
                        mu-trans norm-axis slide-axis)
                       (calc-constraint-param-list-for-translational-friction
-                       mu-trans norm-axis (sliding-axis->no-sliding-axis slide-axis)))))
+                       mu-trans norm-axis (sliding-axis->no-sliding-axis slide-axis))
+                      (calc-constraint-param-list-for-min-max :fz 1 :min/max :min) ;; restrict the sliding without normal force
+                      )))
            (list :matrix (apply #'append (mapcar #'(lambda (x) (cadr (memq :matrix x))) ret))
                  :vector (apply #'append (mapcar #'(lambda (x) (cadr (memq :vector x))) ret)))
            ))
