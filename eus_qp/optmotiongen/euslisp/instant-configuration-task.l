@@ -2188,6 +2188,7 @@ return $\bm{v}_{\mathit{reg}} \in \mathbb{R}^{\mathit{dim}(\bm{q})}$
   &&\bm{d}_{12}^T ( \bm{p}_1 - \bm{p}_2 ) \geq d_{\mathit{margin}} \\
   &&{\rm where} \ \ \bm{d}_{12} = \bm{p}_1 - \bm{p}_2
 \end{eqnarray}
+以降では$\bm{p}_1, \bm{p}_2$はコンフィギュレーションに依存するが，$\bm{d}_{12}$はコンフィギュレーションに依存しないと近似する．
 コンフィギュレーションが$\Delta \bm{q}$だけ更新されてもこれが成立するための条件は次式で表される．
 \begin{eqnarray}
   &&\bm{d}_{12}^T \left\{ ( \bm{p}_1 + \Delta \bm{p}_1 ) - ( \bm{p}_2 + \Delta \bm{p}_2 ) \right\} \geq d_{\mathit{margin}} \\
