@@ -22,6 +22,10 @@
         :debug-view (list :additional-draw-objects *arrow-list*)
         :root-virtual-mode :planar
         :root-virtual-joint-invariant? t
+        :root-virtual-joint-min-angle-list
+        (list -1e10 0 -30)
+        :root-virtual-joint-max-angle-list
+        (list 1e10 0 30)
         )
   )
 (warn "(demo-pr2-ik-with-stand-position)~%")
