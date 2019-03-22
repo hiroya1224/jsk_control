@@ -30,6 +30,10 @@
    )
   )
 
-(warn "(demo-rhp4b-torque-gradient)~%")
-(warn "(demo-rhp4b-torque-gradient :root-virtual-mode :6dof)~%")
-(warn "(demo-rhp4b-torque-gradient :root-virtual-mode :6dof :drive-root-virtual? t)~%")
+(defun demo-rhp4b-torque-gradient-all
+    ()
+  (demo-rhp4b-torque-gradient)
+  (demo-rhp4b-torque-gradient :root-virtual-mode :6dof)
+  (demo-rhp4b-torque-gradient :root-virtual-mode :6dof :drive-root-virtual? t)
+  )
+(warn "(demo-rhp4b-torque-gradient-all)~%")
