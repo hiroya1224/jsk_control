@@ -5,12 +5,17 @@
 (defun demo-rhp4b-reach-wall
     (&key
      (enable-statics? t)
+     (use-hand-face? nil)
+     (fix-rleg? t)
      )
   (setq *robot* (instance rhp4b-robot :init))
   (send *robot* :fix-leg-to-coords (make-coords))
   (send *robot* :put :larm-contact-coords
-        (make-cascoords :parent (send (send *robot* :larm :end-coords) :parent)
-                        :coords (send (send (send *robot* :larm :end-coords) :copy-worldcoords) :rotate -pi/2 :y)))
+        (make-cascoords :parent
+                        (send (send *robot* :larm :end-coords) :parent)
+                        :coords
+                        (send (send (send *robot* :larm :end-coords) :copy-worldcoords)
+                              :rotate (if use-hand-face? -pi/2 0) :y)))
   (create-support-polygon *robot* (send (send *robot* :rleg :end-coords) :parent))
   (create-support-polygon *robot* (send (send *robot* :lleg :end-coords) :parent))
   (setq *board* (make-cube 2000 2000 100))
@@ -43,15 +48,19 @@
      (cond (enable-statics?
             (send *robot*
                   :inverse-kinematics-statics-optmotiongen
-                  (list (send (send *robot* :lleg :end-coords) :copy-worldcoords)
-                        (send (send *robot* :rleg :end-coords) :copy-worldcoords)
-                        *face*
-                        )
+                  (remove
+                   nil
+                   (list (send (send *robot* :lleg :end-coords) :copy-worldcoords)
+                         (if fix-rleg? (send (send *robot* :rleg :end-coords) :copy-worldcoords))
+                         *face*
+                         ))
                   :move-target
-                  (list (send *robot* :lleg :end-coords)
-                        (send *robot* :rleg :end-coords)
-                        (send *robot* :get :larm-contact-coords)
-                        )
+                  (remove
+                   nil
+                   (list (send *robot* :lleg :end-coords)
+                         (if fix-rleg? (send *robot* :rleg :end-coords))
+                         (send *robot* :get :larm-contact-coords)
+                         ))
                   :contact-target-coords
                   (list (send (send *robot* :lleg :end-coords) :copy-worldcoords)
                         *face*
@@ -73,18 +82,21 @@
                              :l-max-y 70
                              )
                    (instance default-contact-constraint
-                             :init-from-support-polygon :support-polygon nil)
+                             :init-from-support-polygon
+                             :mu-trans 0.1
+                             :support-polygon nil)
                    )
                   :posture-joint-list
                   (send *robot* :joint-list)
                   :posture-joint-angle-list
                   (send-all (send *robot* :joint-list) :joint-angle)
-                  :translation-axis (list t t t)
-                  :rotation-axis (list t t nil)
-                  :debug-view :no-message
-                  :revert-if-fail nil
+                  ;; :debug-view :no-message
                   :root-virtual-mode :6dof
                   :optimize-torque? nil
+                  :collision-avoidance-link-pair
+                  (list (list (send *robot* :link "R_KNEE_P_LINK") (send *robot* :link "L_KNEE_P_LINK"))
+                        (list (send *robot* :link "R_WRIST_Y_LINK") (send *robot* :link "R_CROTCH_R_LINK")))
+                   :collision-distance-limit 40 ;; [mm]
                   )
             )
            (t
@@ -92,7 +104,7 @@
                   ;; :larm :inverse-kinematics-optmotiongen
                   :inverse-kinematics-optmotiongen
                   *face*
-                  :move-target (send *robot* :get :larm-contact-coords)
+                  (send *robot* :get :larm-contact-coords)
                   :debug-view nil
                   )
             ))
