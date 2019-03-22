@@ -365,6 +365,7 @@ $m_k$は$k$番目のリンクの質量である．
 
 return $\bm{\tau}^{\mathit{grav}} \in \mathbb{R}^{N_{\mathit{drive\mathchar`-joint}}}$
   "
+  (set-weight-with-fixed-child-links robot)
   (let* ((torque
           (make-array (length drive-joint-list) :element-type :float :initial-element 0))
          )
@@ -421,6 +422,7 @@ return $\bm{\tau}^{\mathit{grav}} \in \mathbb{R}^{N_{\mathit{drive\mathchar`-joi
 
 return $\frac{\partial \bm{\tau}^{\mathit{grav}}}{\partial \bm{\theta}} \in \mathbb{R}^{N_{\mathit{drive\mathchar`-joint}} \times N_{\mathit{joint}}}$
   "
+  (set-weight-with-fixed-child-links robot)
   (let* ((jacobi
           (make-matrix (length drive-joint-list) (length joint-list)))
          (link-list-of-gravity-link)

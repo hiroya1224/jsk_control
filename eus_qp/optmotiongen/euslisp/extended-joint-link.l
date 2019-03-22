@@ -56,7 +56,8 @@ return $mg = \|m \bm{g}\|$
    "
    (or (send self :get :mg)
        (send self :put :mg
-             (* 1e-3 (send self :weight) 1e-3 (elt *g-vec* 2)))) ;; [N]
+             (* 1e-3 (or (send self :get :weight-with-fixed-child-links) (send self :weight))
+                1e-3 (elt *g-vec* 2)))) ;; [N]
    )
   (:mg-vec
    ()
@@ -65,8 +66,30 @@ return $m \bm{g}$
    "
    (or (send self :get :mg-vec)
        (send self :put :mg-vec
-             (scale (* 1e-3 (send self :weight)) (scale 1e-3 *g-vec*)))) ;; [N]
+             (scale (* 1e-3 (or (send self :get :weight-with-fixed-child-links) (send self :weight)))
+                    (scale 1e-3 *g-vec*)))) ;; [N]
    )
+  )
+
+(defun find-fixed-child-links
+    (l &key joint-list)
+  (append
+   (list l)
+   (mapcan
+    #'(lambda (cl)
+        (if (not (member (send cl :joint) joint-list))
+            (find-fixed-child-links cl :joint-list joint-list))
+        )
+    (send l :child-links)))
+  )
+
+(defun set-weight-with-fixed-child-links
+    (robot)
+  (dolist (l (send robot :links))
+    (unless (send l :get :weight-with-fixed-child-links)
+      (send l :put :weight-with-fixed-child-links
+            (reduce #'+ (send-all (find-fixed-child-links l :joint-list (send robot :joint-list)) :weight)))
+      ))
   )
 
 
