@@ -329,7 +329,7 @@ return $\bm{J}_{\mathit{cog,k}} \in \mathbb{R}^{3 \times N_{\mathit{drive\mathch
   (let* ((jacobi
           (make-matrix 3 (length drive-joint-list)))
          (gravity-link-cog-world ;; [m]
-          (scale 1e-3 (send gravity-link :centroid)))
+          (scale 1e-3 (send gravity-link :centroid-with-fixed-child-links)))
          (drive-jnt)
          )
     (dotimes (i (length drive-joint-list))
@@ -529,7 +529,9 @@ return $\frac{\partial \bm{\tau}^{\mathit{grav}}}{\partial \bm{\theta}} \in \mat
                    (member (send jnt :child-link) link-list-of-gravity-link)
                    (cond (;; case (a).(i)
                           (derivedp jnt rotational-joint)
-                          (setq centroid-derivative (v* (send jnt :axis-vector) (scale 1e-3 (v- (send gravity-link :centroid) (send jnt :pos)))))
+                          (setq centroid-derivative
+                                (v* (send jnt :axis-vector)
+                                    (scale 1e-3 (v- (send gravity-link :centroid-with-fixed-child-links) (send jnt :pos)))))
                           )
                          (;; case (a).(ii)
                           t ;; (derivedp jnt linear-joint)
@@ -544,7 +546,8 @@ return $\frac{\partial \bm{\tau}^{\mathit{grav}}}{\partial \bm{\theta}} \in \mat
             (cond ((derivedp drive-jnt rotational-joint)
                    (setq jacobi-element
                          (v. (send gravity-link :mg-vec)
-                             (v+ (v* drive-jnt-axis-derivative (scale 1e-3 (v- (send gravity-link :centroid) (send drive-jnt :pos))))
+                             (v+ (v* drive-jnt-axis-derivative
+                                     (scale 1e-3 (v- (send gravity-link :centroid-with-fixed-child-links) (send drive-jnt :pos))))
                                  (v* (send drive-jnt :axis-vector) (v- centroid-derivative drive-jnt-pos-derivative))
                                  )))
                    )

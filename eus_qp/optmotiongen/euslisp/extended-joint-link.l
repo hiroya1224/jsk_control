@@ -49,24 +49,40 @@ return $\bm{p}_i \in \mathbb{R}^3$
 ;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defmethod bodyset-link
+  (:centroid-with-fixed-child-links
+   ()
+   "
+return $\bm{p}_{\mathit{cog,k}} \in \mathbb{R}^3$ [mm]
+   "
+   (or (send (send self :worldcoords) :transform-vector (send self :get :local-centroid-with-fixed-child-links))
+       (send self :centroid))
+   )
+  (:weight-with-fixed-child-links
+   ()
+   "
+return $m \in \mathbb{R}$ [g]
+   "
+   (or (send self :get :weight-with-fixed-child-links)
+       (send self :weight))
+   )
   (:mg
    ()
    "
-return $mg = \|m \bm{g}\|$
+return $mg = \|m \bm{g}\| \in \mathbb{R}$ [N]
    "
    (or (send self :get :mg)
        (send self :put :mg
-             (* 1e-3 (or (send self :get :weight-with-fixed-child-links) (send self :weight))
+             (* 1e-3 (send self :weight-with-fixed-child-links)
                 1e-3 (elt *g-vec* 2)))) ;; [N]
    )
   (:mg-vec
    ()
    "
-return $m \bm{g}$
+return $m \bm{g} \in \mathbb{R}^3$ [N]
    "
    (or (send self :get :mg-vec)
        (send self :put :mg-vec
-             (scale (* 1e-3 (or (send self :get :weight-with-fixed-child-links) (send self :weight)))
+             (scale (* 1e-3 (send self :weight-with-fixed-child-links))
                     (scale 1e-3 *g-vec*)))) ;; [N]
    )
   )
@@ -85,11 +101,30 @@ return $m \bm{g}$
 
 (defun set-weight-with-fixed-child-links
     (robot)
-  (dolist (l (send robot :links))
-    (unless (send l :get :weight-with-fixed-child-links)
-      (send l :put :weight-with-fixed-child-links
-            (reduce #'+ (send-all (find-fixed-child-links l :joint-list (send robot :joint-list)) :weight)))
-      ))
+  (let* (child-links)
+    (dolist (l (send robot :links))
+      (unless (send l :get :weight-with-fixed-child-links)
+        (setq child-links (find-fixed-child-links l :joint-list (send robot :joint-list)))
+        (send l :put :weight-with-fixed-child-links
+              (reduce #'+ (send-all child-links :weight)))
+        (cond ((eps= (send l :get :weight-with-fixed-child-links) 0.0 1e-10)
+               (send l :put :local-centroid-with-fixed-child-links (float-vector 0 0 0))
+               )
+              (t
+               (send l :put :local-centroid-with-fixed-child-links
+                     (send (send l :worldcoords)
+                           :inverse-transform-vector
+                           (apply
+                            #'v++
+                            (mapcar
+                             #'(lambda (cl)
+                                 (scale (/ (send cl :weight) (send l :get :weight-with-fixed-child-links))
+                                        (send cl :centroid)))
+                             child-links
+                             )))
+                     )
+               ))
+        )))
   )
 
 
