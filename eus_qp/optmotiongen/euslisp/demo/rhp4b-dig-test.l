@@ -196,11 +196,23 @@
   (send *shovel* :transform (send (send *shovel* :get :rarm) :transformation (send *robot* :rarm-end-coords) :world) :world)
   (send *shovel* :rotate pi/2 :x)
   (send (send (send *robot* :rarm-end-coords) :parent) :assoc *shovel*)
-  (setq *shovel-virtual-joint* (instance rotational-joint :init :name 'shovel-virtual-joint :parent-link (send (send *robot* :rarm-end-coords) :parent) :child-link *shovel* :axis :z :min -20 :max 20)))
+  (setq *shovel-virtual-joint* (instance rotational-joint :init :name 'shovel-virtual-joint :parent-link (send (send *robot* :rarm-end-coords) :parent) :child-link *shovel* :axis :z :min -20 :max 20))
+  (send *shovel* :add-joint *shovel-virtual-joint*)
+  (send *shovel* :add-parent-link (send (send *robot* :rarm-end-coords) :parent))
+  (send (send (send *robot* :rarm-end-coords) :parent) :add-child-links *shovel*)
+  ;; !! *robot* is destructively changed !!
+  (send *robot* :set-val 'links
+        (append (send *robot* :get-val 'links) (list *shovel*)))
+  (send *robot* :set-val 'joint-list
+        (append (send *robot* :get-val 'joint-list) (list *shovel-virtual-joint*)))
+  (send *robot* :set-val 'bodies
+        (append (send *robot* :get-val 'bodies) (send *shovel* :bodies)))
+  )
 
 (defun setup-rhp4b (&key (use-ri nil) (shovel-pos-2 nil) (gui t))
   (require :rhp4b-interface "package://khi_ros_bridge_tutorials/euslisp/rhp4b-interface.l")
-  (unless (boundp '*rhp4b*) (rhp4b))
+  ;; it is safe to make new *robot* every time because *robot* is destructively changed
+  (rhp4b) ;; (unless (boundp '*rhp4b*) (rhp4b))
   (setq *robot* *rhp4b*)
   (when use-ri (rhp4b-init))
 
@@ -375,7 +387,7 @@
                             :link-list
                             (list (send *robot* :link-list (send *robot* :rleg :end-coords :parent))
                                   (send *robot* :link-list (send *robot* :lleg :end-coords :parent))
-                                  (send *robot* :link-list (send (send *shovel* :parent) :parent))
+                                  (send *robot* :link-list (send (send *shovel* :get :edge) :parent))
                                   (send *robot* :link-list (send *robot* :larm :end-coords :parent))
                                   )
                             :contact-target-coords
@@ -429,6 +441,6 @@
     (objects (list *robot* *shovel* *sandbox* arrow1 arrow2 arrow3))
 
     (setq pose-list (append pose-list (list (funcall solve-ik arrow1 '(t t t t) '(t t :y t)))))
-    (setq pose-list (append pose-list (list (funcall solve-ik arrow1 '(t t t t) '(t t :y t)))))
-    (setq pose-list (append pose-list (list (funcall solve-ik arrow1 '(t t t t) '(t t :y t)))))
+    (setq pose-list (append pose-list (list (funcall solve-ik arrow2 '(t t t t) '(t t :y t)))))
+    (setq pose-list (append pose-list (list (funcall solve-ik arrow3 '(t t t t) '(t t :y t)))))
     ))
