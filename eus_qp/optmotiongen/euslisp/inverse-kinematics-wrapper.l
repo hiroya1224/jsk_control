@@ -252,6 +252,7 @@ Solve inverse kinematics problem with sqp optimization.
     (obstacles)
     (min-loop)
     ;; new arguments
+    (additional-invariant-joint-list)
     (root-virtual-mode :fix)
     (root-virtual-joint-invariant? nil)
     (root-virtual-joint-min-angle-list)
@@ -391,7 +392,9 @@ Solve inverse kinematics problem with sqp optimization.
                                     ))
                          )
                     (send robot-env :invariant-joint-list
-                          (if root-virtual-joint-invariant? (send robot-env :root-virtual-joint-list)))
+                          (append (if root-virtual-joint-invariant? (send robot-env :root-virtual-joint-list))
+                                  additional-invariant-joint-list
+                                  ))
                     (send robot-env :variant-joint-list
                           (set-difference (send robot-env :joint-list) (send robot-env :invariant-joint-list)))
                     (send robot-env :put :contact-list contact-list)
