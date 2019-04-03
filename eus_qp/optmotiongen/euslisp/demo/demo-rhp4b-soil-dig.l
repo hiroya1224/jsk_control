@@ -247,6 +247,7 @@
 
 (defun demo-rhp4b-soil-dig-trajectory
     (&key
+     (shovel-virtual-joint-angle 10.0)
      (optimize-torque? nil)
      (optimize-start-end-torque? nil)
      (pre-process-func)
@@ -262,6 +263,9 @@
   (send (elt *arrow-list* 1) :newcoords (make-coords :pos (float-vector 1000 0 200)))
   ;; setup robot
   (setup-rhp4b-for-demo-rhp4b-soil-dig)
+  (when shovel-virtual-joint-angle
+    (send (send *robot* :joint :shovel-virtual-joint) :max-angle shovel-virtual-joint-angle)
+    (send (send *robot* :joint :shovel-virtual-joint) :min-angle shovel-virtual-joint-angle))
   (setq *contact-list*
         (list
          (instance contact-ik-arg :init
