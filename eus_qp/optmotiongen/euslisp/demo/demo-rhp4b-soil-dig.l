@@ -290,10 +290,11 @@
   (setq *arrow-list*
         (mapcar
          #'(lambda (name) (arrow :name name))
-         (list :target1 :target2)
+         (list :target1 :target2 :target3)
          ))
-  (send (elt *arrow-list* 0) :newcoords (make-coords :pos (float-vector 1000 0 0)))
-  (send (elt *arrow-list* 1) :newcoords (make-coords :pos (float-vector 1000 0 200)))
+  (send (elt *arrow-list* 0) :newcoords (make-coords :pos (float-vector 800 0 200)))
+  (send (elt *arrow-list* 1) :newcoords (make-coords :pos (float-vector 1000 0 0)))
+  (send (elt *arrow-list* 2) :newcoords (make-coords :pos (float-vector 1000 0 100)))
   ;; setup robot
   (setup-rhp4b-for-demo-rhp4b-soil-dig)
   (when shovel-virtual-joint-angle
@@ -397,6 +398,47 @@
              (coerce (send (car *robot-env-list*) :robot :get :reset-pose-original-av) cons)
              :collision-pair-list
              (get-collision-pair-list-from-robot-env (car *robot-env-list*))
+             )
+   *instant-config-task-list*
+   )
+
+  (push (copy-object *robot-env*) *robot-env-list*)
+  (push
+   (instance instant-configuration-task :init
+             :name :target3
+             :robot-env (car *robot-env-list*)
+             :drive-joint-list
+             (if optimize-torque? (send (car *robot-env-list*) :drive-joint-list) nil)
+             :kin-target-coords-list
+             (list (send *rleg-coords* :copy-worldcoords)
+                   (send *lleg-coords* :copy-worldcoords)
+                   (send (send (car *robot-env-list*) :contact :target3) :contact-coords)
+                   (send (send (car *robot-env-list*) :robot :link :shovel) :get :larm)
+                   )
+             :kin-attention-coords-list
+             (list (send (car *robot-env-list*) :robot :get :rleg-contact-coords)
+                   (send (car *robot-env-list*) :robot :get :lleg-contact-coords)
+                   (send (send (car *robot-env-list*) :robot :link :shovel) :get :edge)
+                   (send (car *robot-env-list*) :robot :larm-end-coords)
+                   )
+             :contact-target-coords-list
+             (list (send *rleg-coords* :copy-worldcoords)
+                   (send *lleg-coords* :copy-worldcoords)
+                   )
+             :contact-attention-coords-list
+             (list (send (car *robot-env-list*) :robot :get :rleg-contact-coords)
+                   (send (car *robot-env-list*) :robot :get :lleg-contact-coords)
+                   )
+             :posture-joint-list
+             (send (car *robot-env-list*) :robot :get :original-joint-list)
+             :posture-joint-angle-list
+             (coerce (send (car *robot-env-list*) :robot :get :reset-pose-original-av) cons)
+             :collision-pair-list
+             (get-collision-pair-list-from-robot-env (car *robot-env-list*))
+             :external-wrench-list
+             (list (float-vector 0 0 -100 0 0 0))
+             :external-coords-list
+             (list (send (send (car *robot-env-list*) :robot :link :shovel) :get :edge))
              )
    *instant-config-task-list*
    )
