@@ -249,6 +249,31 @@
                    ))
   )
 
+(defun get-collision-pair-list-from-robot-env
+    (robot-env)
+  (append
+   ;; between rleg and rarm
+   (apply
+    #'append
+    (mapcar #'(lambda (l1)
+                (mapcar #'(lambda (l2)
+                            (list l1 l2))
+                        (subseq (send robot-env :robot :rleg :links) 1 4)))
+            (subseq (send robot-env :robot :rarm :links) 2 5)))
+   ;; between lleg and larm
+   (apply
+    #'append
+    (mapcar #'(lambda (l1)
+                (mapcar #'(lambda (l2)
+                            (list l1 l2))
+                        (subseq (send robot-env :robot :lleg :links) 1 4)))
+            (subseq (send robot-env :robot :larm :links) 2 5)))
+   ;; between shovel and both legs
+   (mapcar #'(lambda (l) (list l (send robot-env :link :shovel)))
+           (append (subseq (send robot-env :robot :rleg :links) 1 4)
+                   (subseq (send robot-env :robot :lleg :links) 1 4)))
+   ))
+
 (defun demo-rhp4b-soil-dig-trajectory
     (&key
      (shovel-virtual-joint-angle 10.0)
@@ -333,6 +358,8 @@
              (send (car *robot-env-list*) :robot :get :original-joint-list)
              :posture-joint-angle-list
              (coerce (send (car *robot-env-list*) :robot :get :reset-pose-original-av) cons)
+             :collision-pair-list
+             (get-collision-pair-list-from-robot-env (car *robot-env-list*))
              )
    *instant-config-task-list*
    )
@@ -368,6 +395,8 @@
              (send (car *robot-env-list*) :robot :get :original-joint-list)
              :posture-joint-angle-list
              (coerce (send (car *robot-env-list*) :robot :get :reset-pose-original-av) cons)
+             :collision-pair-list
+             (get-collision-pair-list-from-robot-env (car *robot-env-list*))
              )
    *instant-config-task-list*
    )
