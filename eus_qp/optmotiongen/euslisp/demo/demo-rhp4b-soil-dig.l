@@ -258,7 +258,8 @@
     (mapcar #'(lambda (l1)
                 (mapcar #'(lambda (l2)
                             (list l1 l2))
-                        (subseq (send robot-env :robot :rleg :links) 1 4)))
+                        (append (list (send robot-env :robot :link "BODY"))
+                                (subseq (send robot-env :robot :rleg :links) 1 4))))
             (subseq (send robot-env :robot :rarm :links) 2 5)))
    ;; between lleg and larm
    (apply
@@ -266,11 +267,13 @@
     (mapcar #'(lambda (l1)
                 (mapcar #'(lambda (l2)
                             (list l1 l2))
-                        (subseq (send robot-env :robot :lleg :links) 1 4)))
+                        (append (list (send robot-env :robot :link "BODY"))
+                                (subseq (send robot-env :robot :lleg :links) 1 4))))
             (subseq (send robot-env :robot :larm :links) 2 5)))
    ;; between shovel and both legs
    (mapcar #'(lambda (l) (list l (send robot-env :link :shovel)))
-           (append (subseq (send robot-env :robot :rleg :links) 1 4)
+           (append (list (send robot-env :robot :link "BODY"))
+                   (subseq (send robot-env :robot :rleg :links) 1 4)
                    (subseq (send robot-env :robot :lleg :links) 1 4)))
    ))
 
