@@ -258,7 +258,11 @@
   ;; setup target coords and target arrows
   (setq *rleg-coords* (make-coords :pos (float-vector 0 -105 0)))
   (setq *lleg-coords* (make-coords :pos (float-vector 0 105 0)))
-  (setq *arrow-list* (mapcar #'(lambda (x) (arrow)) (make-list 2)))
+  (setq *arrow-list*
+        (mapcar
+         #'(lambda (name) (arrow :name name))
+         (list :target1 :target2)
+         ))
   (send (elt *arrow-list* 0) :newcoords (make-coords :pos (float-vector 1000 0 0)))
   (send (elt *arrow-list* 1) :newcoords (make-coords :pos (float-vector 1000 0 200)))
   ;; setup robot
@@ -267,21 +271,16 @@
     (send (send *robot* :joint :shovel-virtual-joint) :max-angle shovel-virtual-joint-angle)
     (send (send *robot* :joint :shovel-virtual-joint) :min-angle shovel-virtual-joint-angle))
   (setq *contact-list*
-        (list
-         (instance contact-ik-arg :init
-                   :name :target0
-                   :target-coords (elt *arrow-list* 0)
-                   :translation-axis t
-                   :rotation-axis (list :z :y)
-                   :transform-coords (elt *arrow-list* 0)
-                   )
-         (instance contact-ik-arg :init
-                   :name :target1
-                   :target-coords (elt *arrow-list* 1)
-                   :translation-axis t
-                   :rotation-axis (list :z :y)
-                   :transform-coords (elt *arrow-list* 1)
-                   )
+        (mapcar
+         #'(lambda (ar)
+             (instance contact-ik-arg :init
+                       :name (send ar :name)
+                       :target-coords ar
+                       :translation-axis t
+                       :rotation-axis (list :z :y) ;; the order is important
+                       :transform-coords ar
+                       ))
+         *arrow-list*
          ))
   (setq *robot-env* (instance robot-environment :init :robot *robot* :contact-list *contact-list*))
   (send *robot-env* :invariant-joint-list
@@ -303,14 +302,14 @@
   (push (copy-object *robot-env*) *robot-env-list*)
   (push
    (instance instant-configuration-task :init
-             :name :first
+             :name :target1
              :robot-env (car *robot-env-list*)
              :drive-joint-list
              (if (or optimize-torque? optimize-start-end-torque?) (send (car *robot-env-list*) :drive-joint-list) nil)
              :kin-target-coords-list
              (list (send *rleg-coords* :copy-worldcoords)
                    (send *lleg-coords* :copy-worldcoords)
-                   (send (send (car *robot-env-list*) :contact :target0) :contact-coords)
+                   (send (send (car *robot-env-list*) :contact :target1) :contact-coords)
                    (send (send (car *robot-env-list*) :robot :link :shovel) :get :larm)
                    )
              :kin-attention-coords-list
@@ -338,14 +337,14 @@
   (push (copy-object *robot-env*) *robot-env-list*)
   (push
    (instance instant-configuration-task :init
-             :name :first
+             :name :target2
              :robot-env (car *robot-env-list*)
              :drive-joint-list
              (if optimize-torque? (send (car *robot-env-list*) :drive-joint-list) nil)
              :kin-target-coords-list
              (list (send *rleg-coords* :copy-worldcoords)
                    (send *lleg-coords* :copy-worldcoords)
-                   (send (send (car *robot-env-list*) :contact :target1) :contact-coords)
+                   (send (send (car *robot-env-list*) :contact :target2) :contact-coords)
                    (send (send (car *robot-env-list*) :robot :link :shovel) :get :larm)
                    )
              :kin-attention-coords-list
