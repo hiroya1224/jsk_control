@@ -130,6 +130,10 @@
 (defun setup-rhp4b-for-demo-rhp4b-soil-dig
     ()
   (setq *robot* (instance rhp4b-robot :init))
+  (send *robot* :put :original-joint-list
+        (send *robot* :joint-list))
+  (send *robot* :put :reset-pose-original-av
+        (send *robot* :reset-pose))
   ;; assoc shovel
   ;; you can get
   ;; shovel link by (send *robot* :link :shovel)
@@ -288,7 +292,6 @@
   (send *robot-env* :variant-joint-list
         (set-difference (send *robot-env* :joint-list) (send *robot-env* :invariant-joint-list)))
   (setup-contact-constraint-for-demo-rhp4b-soil-dig)
-  (send *robot-env* :robot :reset-pose)
   (setq *robot-env-list* nil)
   (setq *instant-config-task-list* nil)
   ;; draw
@@ -326,10 +329,10 @@
              (list (send (car *robot-env-list*) :robot :get :rleg-contact-coords)
                    (send (car *robot-env-list*) :robot :get :lleg-contact-coords)
                    )
-             ;; :posture-joint-list
-             ;; (send (car *robot-env-list*) :robot :joint-list)
-             ;; :posture-joint-angle-list
-             ;; (send-all (send (car *robot-env-list*) :robot :joint-list) :joint-angle)
+             :posture-joint-list
+             (send (car *robot-env-list*) :robot :get :original-joint-list)
+             :posture-joint-angle-list
+             (coerce (send (car *robot-env-list*) :robot :get :reset-pose-original-av) cons)
              )
    *instant-config-task-list*
    )
@@ -361,10 +364,10 @@
              (list (send (car *robot-env-list*) :robot :get :rleg-contact-coords)
                    (send (car *robot-env-list*) :robot :get :lleg-contact-coords)
                    )
-             ;; :posture-joint-list
-             ;; (send (car *robot-env-list*) :robot :joint-list)
-             ;; :posture-joint-angle-list
-             ;; (send-all (send (car *robot-env-list*) :robot :joint-list) :joint-angle)
+             :posture-joint-list
+             (send (car *robot-env-list*) :robot :get :original-joint-list)
+             :posture-joint-angle-list
+             (coerce (send (car *robot-env-list*) :robot :get :reset-pose-original-av) cons)
              )
    *instant-config-task-list*
    )
