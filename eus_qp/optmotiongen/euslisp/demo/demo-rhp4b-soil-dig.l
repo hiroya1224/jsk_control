@@ -149,7 +149,7 @@
           (instance rotational-joint :init
                     :name :shovel-virtual-joint
                     :parent-link (send (send *robot* :rarm-end-coords) :parent)
-                    :child-link shovel :axis :z :min -20 :max 20))
+                    :child-link shovel :axis :z :min -60 :max 60))
     (send shovel :add-joint shovel-virtual-joint)
     (send shovel :add-parent-link (send (send *robot* :rarm-end-coords) :parent))
     (send (send (send *robot* :rarm-end-coords) :parent) :add-child-links shovel)
@@ -283,7 +283,8 @@
 
 (defun demo-rhp4b-soil-dig-trajectory
     (&key
-     (shovel-virtual-joint-angle 10.0)
+     (shovel-virtual-joint-angle nil)
+     (dig-depth 150)
      (optimize-torque? nil)
      (optimize-start-end-torque? nil)
      (pre-process-func)
@@ -297,33 +298,62 @@
   (setq *arrow-list*
         (mapcar
          #'(lambda (name) (arrow :name name))
-         (list :target1 :target2 :target3)
+         (list :dig-target :dig-lift)
          ))
-  (send (elt *arrow-list* 0) :newcoords (make-coords :pos (float-vector 800 0 200)))
-  (send (elt *arrow-list* 1) :newcoords (make-coords :pos (float-vector 1000 0 0)))
-  (send (elt *arrow-list* 2) :newcoords (make-coords :pos (float-vector 1000 0 100)))
+  (send (elt *arrow-list* 0) :newcoords (make-coords :pos (float-vector 800 0 -100)))
+  (send (elt *arrow-list* 1) :newcoords (make-coords :pos (float-vector 800 0 0)))
   ;; setup robot
   (setup-rhp4b-for-demo-rhp4b-soil-dig)
   (when shovel-virtual-joint-angle
     (send (send *robot* :joint :shovel-virtual-joint) :max-angle shovel-virtual-joint-angle)
     (send (send *robot* :joint :shovel-virtual-joint) :min-angle shovel-virtual-joint-angle))
   (setq *contact-list*
-        (mapcar
-         #'(lambda (ar)
-             (instance contact-ik-arg :init
-                       :name (send ar :name)
-                       :target-coords ar
-                       :translation-axis t
-                       :rotation-axis (list :z :y) ;; the order is important
-                       :transform-coords ar
-                       ))
-         *arrow-list*
+        (append
+         (mapcar
+          #'(lambda (ar)
+              (instance contact-ik-arg :init
+                        :name (send ar :name)
+                        :target-coords ar
+                        :translation-axis t
+                        :rotation-axis (list :z :y) ;; the order is important
+                        :transform-coords ar
+                        ))
+          *arrow-list*
+          )
+         (list
+          (instance contact-ik-arg :init
+                    :name :shovel-larm
+                    :target-coords (send (send *robot* :link :shovel) :get :larm)
+                    :translation-axis :z
+                    :rotation-axis :z
+                    :transform-coords (send (send *robot* :link :shovel) :get :larm)
+                    ))
          ))
   (setq *robot-env* (instance robot-environment :init :robot *robot* :contact-list *contact-list*))
   (send *robot-env* :invariant-joint-list
-        (list (send *robot-env* :joint :shovel-virtual-joint)))
+        (append (flatten (send-all (send *robot-env* :contact-list) :joint-list))
+                (list (send *robot-env* :joint :shovel-virtual-joint))
+                ))
   (send *robot-env* :variant-joint-list
         (set-difference (send *robot-env* :joint-list) (send *robot-env* :invariant-joint-list)))
+  ;; contact for the dig coords
+  (send (send *robot-env* :contact :dig-target) :put :contact-pre-coords
+        (make-cascoords
+         :parent
+         (send (send *robot-env* :contact :dig-target) :contact-coords)
+         :coords
+         (send (send (send (send *robot-env* :contact :dig-target) :contact-coords) :copy-worldcoords)
+               :translate (float-vector (- dig-depth) 0 0) :local)
+         ))
+  (send (elt (send (send *robot-env* :contact :dig-target) :joint-list) 1) :max-angle 90)
+  (send (elt (send (send *robot-env* :contact :dig-target) :joint-list) 1) :min-angle 45)
+  ;; setting of contact for shovel larm coords
+  (send (send *robot-env* :link :shovel) :assoc (send *robot-env* :contact :shovel-larm))
+  (send (elt (send (send *robot-env* :contact :shovel-larm) :joint-list) 0) :max-angle 200)
+  (send (elt (send (send *robot-env* :contact :shovel-larm) :joint-list) 0) :min-angle -200)
+  (send (elt (send (send *robot-env* :contact :shovel-larm) :joint-list) 1) :max-angle 90)
+  (send (elt (send (send *robot-env* :contact :shovel-larm) :joint-list) 1) :min-angle -90)
+
   (setup-contact-constraint-for-demo-rhp4b-soil-dig)
   (setq *robot-env-list* nil)
   (setq *instant-config-task-list* nil)
@@ -338,15 +368,15 @@
   (push (copy-object *robot-env*) *robot-env-list*)
   (push
    (instance instant-configuration-task :init
-             :name :target1
+             :name :pre-dig-target
              :robot-env (car *robot-env-list*)
              :drive-joint-list
              (if (or optimize-torque? optimize-start-end-torque?) (send (car *robot-env-list*) :drive-joint-list) nil)
              :kin-target-coords-list
              (list (send *rleg-coords* :copy-worldcoords)
                    (send *lleg-coords* :copy-worldcoords)
-                   (send (send (car *robot-env-list*) :contact :target1) :contact-coords)
-                   (send (send (car *robot-env-list*) :robot :link :shovel) :get :larm)
+                   (send (send (car *robot-env-list*) :contact :dig-target) :get :contact-pre-coords)
+                   (send (send (car *robot-env-list*) :contact :shovel-larm) :contact-coords)
                    )
              :kin-attention-coords-list
              (list (send (car *robot-env-list*) :robot :get :rleg-contact-coords)
@@ -375,15 +405,15 @@
   (push (copy-object *robot-env*) *robot-env-list*)
   (push
    (instance instant-configuration-task :init
-             :name :target2
+             :name :dig-target
              :robot-env (car *robot-env-list*)
              :drive-joint-list
              (if optimize-torque? (send (car *robot-env-list*) :drive-joint-list) nil)
              :kin-target-coords-list
              (list (send *rleg-coords* :copy-worldcoords)
                    (send *lleg-coords* :copy-worldcoords)
-                   (send (send (car *robot-env-list*) :contact :target2) :contact-coords)
-                   (send (send (car *robot-env-list*) :robot :link :shovel) :get :larm)
+                   (send (send (car *robot-env-list*) :contact :dig-target) :contact-coords)
+                   (send (send (car *robot-env-list*) :contact :shovel-larm) :contact-coords)
                    )
              :kin-attention-coords-list
              (list (send (car *robot-env-list*) :robot :get :rleg-contact-coords)
@@ -412,15 +442,15 @@
   (push (copy-object *robot-env*) *robot-env-list*)
   (push
    (instance instant-configuration-task :init
-             :name :target3
+             :name :dig-lift
              :robot-env (car *robot-env-list*)
              :drive-joint-list
              (if optimize-torque? (send (car *robot-env-list*) :drive-joint-list) nil)
              :kin-target-coords-list
              (list (send *rleg-coords* :copy-worldcoords)
                    (send *lleg-coords* :copy-worldcoords)
-                   (send (send (car *robot-env-list*) :contact :target3) :contact-coords)
-                   (send (send (car *robot-env-list*) :robot :link :shovel) :get :larm)
+                   (send (send (car *robot-env-list*) :contact :dig-lift) :contact-coords)
+                   (send (send (car *robot-env-list*) :contact :shovel-larm) :contact-coords)
                    )
              :kin-attention-coords-list
              (list (send (car *robot-env-list*) :robot :get :rleg-contact-coords)
