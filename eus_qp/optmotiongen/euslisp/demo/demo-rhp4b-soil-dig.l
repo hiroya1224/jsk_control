@@ -270,6 +270,10 @@
                         (append (list (send robot-env :robot :link "BODY"))
                                 (subseq (send robot-env :robot :lleg :links) 1 4))))
             (subseq (send robot-env :robot :larm :links) 2 5)))
+   ;; between both legs
+   (mapcar #'(lambda (l1 l2) (list l1 l2))
+           (subseq (send robot-env :robot :rleg :links) 1 4)
+           (subseq (send robot-env :robot :lleg :links) 1 4))
    ;; between shovel and both legs
    (mapcar #'(lambda (l) (list l (send robot-env :link :shovel)))
            (append (list (send robot-env :robot :link "BODY"))
