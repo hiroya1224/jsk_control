@@ -10,6 +10,8 @@
      (use-msc? t)
      (loop-num 30)
      (with-obstacle? t)
+     (only-1d-constraint? nil)
+     (joint-range-limit? t)
      (num-msc 4)
      (dispersion-scale 1e0)
      (dispersion-scale-decrease-ratio 0.8)
@@ -19,11 +21,10 @@
      )
   ;; setup robot
   (setq *robot* (instance two-dof-manipulator :init))
-  (send-all (send *robot* :joint-list) :max-angle 360)
-  (send-all (send *robot* :joint-list) :min-angle -360)
-  (unless with-obstacle?
+  (send-all (send *robot* :joint-list) :max-angle 270)
+  (send-all (send *robot* :joint-list) :min-angle -270)
+  (when joint-range-limit?
     (send (elt (send *robot* :joint-list) 0) :max-angle 20)
-    (send (elt (send *robot* :joint-list) 0) :min-angle -270)
     )
   (setq *robot-env*
         (instance robot-environment :init :robot *robot* :root-virtual-mode :fix))
@@ -59,7 +60,14 @@
                   :kin-attention-coords-list
                   (list (send *robot* :end-coords))
                   :kin-scale-list
-                  (list (float-vector 1 1 0 0 0 0)) ;; only x and y
+                  (list
+                   (cond (only-1d-constraint?
+                          (float-vector 0 1 0 0 0 0) ;; only y
+                          )
+                         (t
+                          (float-vector 1 1 0 0 0 0) ;; x and y
+                          ))
+                   )
                   :collision-pair-list
                   (apply
                    #'append
