@@ -61,7 +61,10 @@ Return list of configuration-task instance
    _config-task-list
    )
   (:dispersion-matrix
-   ()
+   (&aux
+    (has-dist-method?
+     (member :distance-vector (send _config-task :methods)))
+    )
    "
 \eqref{eq:sqp-msc-dispersion-matrix}参照．
 
@@ -75,63 +78,114 @@ return $\bm{W}_{\mathit{msc}} \in \mathbb{R}^{N_{\mathit{msc}} \mathit{dim}(\bm{
                 (make-matrix (* _num-msc (send _config-task :dim-config)) (* _num-msc (send _config-task :dim-config))))
           ))
    (dotimes (i _num-msc)
-     (dotimes (j (1+ i))
-       (let* ((config-vec-i
-               (send (elt _config-task-list i) :config-vector))
-              (config-vec-j
-               (send (elt _config-task-list j) :config-vector))
-              (d-vec
-               (v- config-vec-i config-vec-j))
-              (dist2
-               (max (norm2 d-vec) _config-vector-dist2-min))
-              mat
-              )
-         (cond ((= i j)
-                (setq mat
-                      (reduce
-                       #'m+
-                       (mapcar
-                        #'(lambda
-                            (other-config-task)
-                            (let* ((tmp-d-vec
-                                    (v- (send (elt _config-task-list i) :config-vector) (send other-config-task :config-vector)))
-                                   (tmp-dist2
-                                    (max (norm2 tmp-d-vec) _config-vector-dist2-min))
-                                   )
+     (let* ((d-jacobi
+             (if has-dist-method? (send (elt _config-task-list i) :distance-jacobian)))
+            )
+       (dotimes (j (1+ i))
+         (let* ((d-vec
+                 (cond (has-dist-method?
+                        (send (elt _config-task-list i) :distance-vector (elt _config-task-list j))
+                        )
+                       (t
+                        (v- (send (elt _config-task-list i) :config-vector) (send (elt _config-task-list j) :config-vector))
+                        ))
+                 )
+                (dist2
+                 (max (norm2 d-vec) _config-vector-dist2-min))
+                (d-jacobi-j
+                 (if has-dist-method? (send (elt _config-task-list j) :distance-jacobian)))
+                mat
+                )
+           (cond ((= i j)
+                  (setq mat
+                        (reduce
+                         #'m+
+                         (mapcar
+                          #'(lambda
+                              (other-config-task
+                               &aux
+                               (tmp-d-vec
+                                (cond (has-dist-method?
+                                       (send (elt _config-task-list i) :distance-vector other-config-task)
+                                       )
+                                      (t
+                                       (v- (send (elt _config-task-list i) :config-vector) (send other-config-task :config-vector))
+                                       ))
+                                )
+                               (tmp-dist2
+                                (max (norm2 tmp-d-vec) _config-vector-dist2-min))
+                               )
                               (m+
                                (scale-matrix (/ 4 (* tmp-dist2 tmp-dist2))
-                                             (m* (transpose (matrix tmp-d-vec)) (matrix tmp-d-vec)))
+                                             (cond (has-dist-method?
+                                                    (m*
+                                                     (m*
+                                                      (m*
+                                                       (transpose d-jacobi)
+                                                       (transpose (matrix tmp-d-vec)))
+                                                      (matrix tmp-d-vec))
+                                                     d-jacobi)
+                                                    )
+                                                   (t
+                                                    (m* (transpose (matrix tmp-d-vec)) (matrix tmp-d-vec))
+                                                    ))
+                                             )
                                (scale-matrix (/ -2 tmp-dist2)
-                                             (unit-matrix (send _config-task :dim-config)))
-                               )))
-                        (remove (elt _config-task-list i) _config-task-list :test #'eq)
-                        )))
-                (copy-block-matrix _dispersion-matrix
-                                   mat
-                                   (* i (send _config-task :dim-config))
-                                   (* i (send _config-task :dim-config))
-                                   )
-                )
-               (t
-                (setq mat
-                      (m+
-                       (scale-matrix (/ -4 (* dist2 dist2))
-                                     (m* (transpose (matrix d-vec)) (matrix d-vec)))
-                       (scale-matrix (/ 2 dist2)
-                                     (unit-matrix (send _config-task :dim-config)))
-                       ))
-                (copy-block-matrix _dispersion-matrix
-                                   mat
-                                   (* i (send _config-task :dim-config))
-                                   (* j (send _config-task :dim-config))
-                                   )
-                (copy-block-matrix _dispersion-matrix
-                                   mat
-                                   (* j (send _config-task :dim-config))
-                                   (* i (send _config-task :dim-config))
-                                   )
-                ))
-         )))
+                                             (cond (has-dist-method?
+                                                    (m* (transpose d-jacobi) d-jacobi)
+                                                    )
+                                                   (t
+                                                    (unit-matrix (send _config-task :dim-config))
+                                                    ))
+                                             )
+                               ))
+                          (remove (elt _config-task-list i) _config-task-list :test #'eq)
+                          )))
+                  (copy-block-matrix _dispersion-matrix
+                                     mat
+                                     (* i (send _config-task :dim-config))
+                                     (* i (send _config-task :dim-config))
+                                     )
+                  )
+                 (t
+                  (setq mat
+                        (m+
+                         (scale-matrix (/ -4 (* dist2 dist2))
+                                       (cond (has-dist-method?
+                                              (m*
+                                               (m*
+                                                (m*
+                                                 (transpose d-jacobi)
+                                                 (transpose (matrix d-vec)))
+                                                (matrix d-vec))
+                                               d-jacobi-j)
+                                              )
+                                             (t
+                                              (m* (transpose (matrix d-vec)) (matrix d-vec))
+                                              ))
+                                       )
+                         (scale-matrix (/ 2 dist2)
+                                       (cond (has-dist-method?
+                                              (m* (transpose d-jacobi) d-jacobi-j)
+                                              )
+                                             (t
+                                              (unit-matrix (send _config-task :dim-config))
+                                              ))
+                                       )
+                         ))
+                  (copy-block-matrix _dispersion-matrix
+                                     mat
+                                     (* i (send _config-task :dim-config))
+                                     (* j (send _config-task :dim-config))
+                                     )
+                  (copy-block-matrix _dispersion-matrix
+                                     mat
+                                     (* j (send _config-task :dim-config))
+                                     (* i (send _config-task :dim-config))
+                                     )
+                  ))
+           ))))
+   ;; modify to positive definite matrix
    (let* ((ql-ret
            (ql-decompose _dispersion-matrix))
           (eigen-vec)
@@ -149,12 +203,16 @@ return $\bm{W}_{\mathit{msc}} \in \mathbb{R}^{N_{\mathit{msc}} \mathit{dim}(\bm{
                   (m* (m* ql-mat (diagonal eigen-vec-positive)) (transpose ql-mat)))
             )
            (t
+            (warning-message 1 "sqp-msc-optimization: ql-decompose failed.~%")
             (fill (array-entity _dispersion-matrix) 0)
             )))
    _dispersion-matrix
    )
   (:dispersion-vector
-   ()
+   (&aux
+    (has-dist-method?
+     (member :distance-vector (send _config-task :methods)))
+    )
    "
 \eqref{eq:sqp-msc-dispersion-vector}参照．
 
@@ -164,14 +222,33 @@ return $\bm{v}_{\mathit{msc}} \in \mathbb{R}^{N_{\mathit{msc}} \mathit{dim}(\bm{
     #'concatenate
     float-vector
     (mapcar
-     #'(lambda (config-task)
+     #'(lambda (config-task
+                &aux
+                (d-jacobi
+                 (if has-dist-method? (send config-task :distance-jacobian)))
+                )
          (apply
           #'v++
           (mapcar
-           #'(lambda (other-config-task)
-               (scale (/ -2 (max (norm2 (v- (send config-task :config-vector) (send other-config-task :config-vector)))
-                                 _config-vector-dist2-min))
-                      (v- (send config-task :config-vector) (send other-config-task :config-vector))))
+           #'(lambda (other-config-task
+                      &aux
+                      (d-vec
+                       (cond (has-dist-method?
+                              (send config-task :distance-vector other-config-task)
+                              )
+                             (t
+                              (v- (send config-task :config-vector) (send other-config-task :config-vector))
+                              ))
+                       )
+                      )
+               (scale (/ -2 (max (norm2 d-vec) _config-vector-dist2-min))
+                      (cond (has-dist-method?
+                             (transform (transpose d-jacobi) d-vec)
+                             )
+                            (t
+                             d-vec
+                             ))
+                      ))
            (remove config-task _config-task-list :test #'eq)
            )))
      _config-task-list))
@@ -191,11 +268,6 @@ return $\bm{v}_{\mathit{msc}} \in \mathbb{R}^{N_{\mathit{msc}} \mathit{dim}(\bm{
           :status _qp-status
           :initial-state
           (make-array (* (send _config-task :dim-config) _num-msc) :element-type :float :initial-element 0)
-          :eval-weight-matrix
-          (m+
-           (m* (transpose _task-jacobian) _task-jacobian _dim-config-buf-matrix)
-           (apply #'concatenate-matrix-diagonal (send-all _config-task-list :regular-matrix))
-           _dim-config-buf-matrix)
           :eval-weight-matrix
           (m+
            (m+
