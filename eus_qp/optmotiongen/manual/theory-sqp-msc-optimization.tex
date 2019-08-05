@@ -10,10 +10,12 @@
   &&{\rm where} \ \ \bm{\hat{q}} \eqdef \begin{pmatrix} \bm{q}^{(1)T} & \bm{q}^{(2)T} & \cdots & \bm{q}^{(N_{\mathit{msc}})T} \end{pmatrix}^T \\
   &&\phantom{\rm where} \ \ \mathcal{I} \eqdef \{ 1,2,\cdots,N_{\mathit{msc}} \} \\
   &&\phantom{\rm where} \ \ F_{\mathit{msc}}(\bm{\hat{q}}; i) \eqdef - \frac{1}{2} \sum_{\substack{j \in \mathcal{I} \\ j \not= i}} \log \| \bm{d}(\bm{q}^{(i)}, \bm{q}^{(j)}) \|^2 \\
-  &&\phantom{\rm where} \ \ \bm{d}(\bm{q}^{(i)}, \bm{q}^{(j)}) \eqdef \bm{q}^{(i)} - \bm{q}^{(j)}
+  &&\phantom{\rm where} \ \ \bm{d}(\bm{q}^{(i)}, \bm{q}^{(j)}) \eqdef \bm{p}(\bm{q}^{(i)}) - \bm{p}(\bm{q}^{(j)})
 \end{eqnarray}
 $N_{\mathit{msc}}$は解候補の個数で，事前に与えるものとする．$\mathit{msc}$は複数解候補(multiple solution candidates)を表す．
-これは，複数の解候補を同時に探索し，それぞれの解候補$\bm{q}^{(i)}$が本来の目的関数$F(\bm{q}^{(i)})$を小さくして，なおかつ，解候補どうしの距離が大きくなるように最適化することを表している．
+これは，複数の解候補を同時に探索し，それぞれの解候補$\bm{q}^{(i)}$が本来の目的関数$F(\bm{q}^{(i)})$を小さくして，なおかつ，解候補どうしの距離が大きくなるように最適化することを表している
+\footnote{$\bm{p}(\bm{q})$は，コンフィギュレーションを距離計算のために変換する関数である．
+普通の場合は，コンフィギュレーションそのものが離れるように$\bm{p}(\bm{q})=\bm{q}$とすれば良い．}．
 これにより，初期値に依存した唯一の局所解だけでなく，そこから離れた複数の局所解を得ることが可能となり，通常の最適化に比べてより良い解が得られることが期待される．
 以降では，解候補どうしの距離のコストを表す項$F_{\mathit{msc}}(\bm{\hat{q}}; i)$を解候補分散項と呼ぶ
 \footnote{解分散項の$\log$を無くすことは適切ではない．なぜなら，$d = \| \bm{d}(\bm{q}^{(i)}, \bm{q}^{(j)}) \|$として，解分散項の勾配は，
@@ -35,54 +37,65 @@ $N_{\mathit{msc}}$は解候補の個数で，事前に与えるものとする�
   \nabla_i F_{\mathit{msc}}(\bm{\hat{q}}; i) &=& \frac{\partial F_{\mathit{msc}}(\bm{\hat{q}}; i)}{\partial \bm{q}^{(i)}} \\
   &=& - \frac{1}{2} \sum_{\substack{j \in \mathcal{I} \\ j \not= i}} \frac{\partial}{\partial \bm{q}^{(i)}} \log \| \bm{d}(\bm{q}^{(i)}, \bm{q}^{(j)}) \|^2 \\
   &=& - \sum_{\substack{j \in \mathcal{I} \\ j \not= i}} \frac{1}{\| \bm{d}(\bm{q}^{(i)}, \bm{q}^{(j)}) \|^2} \left( \frac{\partial \bm{d}(\bm{q}^{(i)}, \bm{q}^{(j)})}{\partial \bm{q}^{(i)}} \right)^T \bm{d}(\bm{q}^{(i)}, \bm{q}^{(j)})\\
-  &=& - \sum_{\substack{j \in \mathcal{I} \\ j \not= i}} \frac{\bm{d}(\bm{q}^{(i)}, \bm{q}^{(j)})}{\| \bm{d}(\bm{q}^{(i)}, \bm{q}^{(j)}) \|^2} \\
+  &=& - \sum_{\substack{j \in \mathcal{I} \\ j \not= i}} \frac{1}{\| \bm{d}(\bm{q}^{(i)}, \bm{q}^{(j)}) \|^2} {\bm{J}^{(i)}}^T \bm{d}(\bm{q}^{(i)}, \bm{q}^{(j)})\\
+  &=& - \sum_{\substack{j \in \mathcal{I} \\ j \not= i}} \bm{g}(\bm{q}^{(j)}; i)
 \end{eqnarray}
 \end{subequations}
+ただし，
+\begin{eqnarray}
+  \bm{J}^{(i)} &=& \left. \frac{\partial \bm{p}}{\partial \bm{q}} \right|_{\bm{q}=\bm{q}^{(i)}} \\
+  \bm{g}(\bm{q}; i) &=& \frac{1}{\| \bm{d}(\bm{q}^{(i)}, \bm{q}) \|^2} {\bm{J}^{(i)}}^T \bm{d}(\bm{q}^{(i)}, \bm{q})
+\end{eqnarray}
 \begin{subequations}
 \begin{eqnarray}
   \nabla_k F_{\mathit{msc}}(\bm{\hat{q}}; i) &=& \frac{\partial F_{\mathit{msc}}(\bm{\hat{q}}; i)}{\partial \bm{q}^{(k)}} \ \ \ \ k \in \mathcal{I} \land k \not= i \\
   &=& - \frac{1}{2} \sum_{\substack{j \in \mathcal{I} \\ j \not= i}} \frac{\partial}{\partial \bm{q}^{(k)}} \log \| \bm{d}(\bm{q}^{(i)}, \bm{q}^{(j)}) \|^2 \\
   &=& - \frac{1}{2} \frac{\partial}{\partial \bm{q}^{(k)}} \log \| \bm{d}(\bm{q}^{(i)}, \bm{q}^{(k)}) \|^2 \\
   &=& - \frac{1}{\| \bm{d}(\bm{q}^{(i)}, \bm{q}^{(k)}) \|^2} \left( \frac{\partial \bm{d}(\bm{q}^{(i)}, \bm{q}^{(k)})}{\partial \bm{q}^{(k)}} \right)^T \bm{d}(\bm{q}^{(i)}, \bm{q}^{(k)})\\
-  &=& \frac{\bm{d}(\bm{q}^{(i)}, \bm{q}^{(k)})}{\| \bm{d}(\bm{q}^{(i)}, \bm{q}^{(k)}) \|^2} \\
+  &=& \frac{1}{\| \bm{d}(\bm{q}^{(i)}, \bm{q}^{(k)}) \|^2} {\bm{J}^{(k)}}^T \bm{d}(\bm{q}^{(i)}, \bm{q}^{(k)}) \\
+  &=& - \frac{1}{\| \bm{d}(\bm{q}^{(k)}, \bm{q}^{(i)}) \|^2} {\bm{J}^{(k)}}^T \bm{d}(\bm{q}^{(k)}, \bm{q}^{(i)}) \\
+  &=& - \bm{g}(\bm{q}^{(i)}; k)
 \end{eqnarray}
 \end{subequations}
 \begin{subequations}
 \begin{eqnarray}
   \nabla^2_{ii} F_{\mathit{msc}}(\bm{\hat{q}}; i) &=& \frac{\partial^2 F_{\mathit{msc}}(\bm{\hat{q}}; i)}{\partial \bm{q}^{(i) 2}} \\
-  &=& - \sum_{\substack{j \in \mathcal{I} \\ j \not= i}} \frac{\partial}{\partial \bm{q}^{(i)}} \left( \left\{ \| \bm{d}(\bm{q}^{(i)}, \bm{q}^{(j)}) \|^2 \right\}^{-1} \bm{d}(\bm{q}^{(i)}, \bm{q}^{(j)}) \right) \\
-  &=& - \sum_{\substack{j \in \mathcal{I} \\ j \not= i}} \left( - 2 \left\{ \| \bm{d}(\bm{q}^{(i)}, \bm{q}^{(j)}) \|^2 \right\}^{-2} \bm{d}(\bm{q}^{(i)}, \bm{q}^{(j)}) \bm{d}(\bm{q}^{(i)}, \bm{q}^{(j)})^T + \left\{ \| \bm{d}(\bm{q}^{(i)}, \bm{q}^{(j)}) \|^2 \right\}^{-1} \bm{I} \right) \\
-  &=& - \sum_{\substack{j \in \mathcal{I} \\ j \not= i}} \left( - \frac{2}{\| \bm{d}(\bm{q}^{(i)}, \bm{q}^{(j)}) \|^4} \bm{d}(\bm{q}^{(i)}, \bm{q}^{(j)}) \bm{d}(\bm{q}^{(i)}, \bm{q}^{(j)})^T + \frac{1}{ \| \bm{d}(\bm{q}^{(i)}, \bm{q}^{(j)}) \|^2 } \bm{I} \right) \\
-  &=& - \sum_{\substack{j \in \mathcal{I} \\ j \not= i}} \bm{H}(\bm{q}^{(i)}, \bm{q}^{(j)})
+  &=& - \sum_{\substack{j \in \mathcal{I} \\ j \not= i}} \frac{\partial}{\partial \bm{q}^{(i)}} \left( \left\{ \| \bm{d}(\bm{q}^{(i)}, \bm{q}^{(j)}) \|^2 \right\}^{-1} {\bm{J}^{(i)}}^T \bm{d}(\bm{q}^{(i)}, \bm{q}^{(j)}) \right) \\
+  &\approx& - \sum_{\substack{j \in \mathcal{I} \\ j \not= i}} \left( - 2 \left\{ \| \bm{d}(\bm{q}^{(i)}, \bm{q}^{(j)}) \|^2 \right\}^{-2} {\bm{J}^{(i)}}^T \bm{d}(\bm{q}^{(i)}, \bm{q}^{(j)}) \bm{d}(\bm{q}^{(i)}, \bm{q}^{(j)})^T \bm{J}^{(i)} + \left\{ \| \bm{d}(\bm{q}^{(i)}, \bm{q}^{(j)}) \|^2 \right\}^{-1} {\bm{J}^{(i)}}^T \bm{J}^{(i)} \right) \\
+  &=& - \sum_{\substack{j \in \mathcal{I} \\ j \not= i}} \left( - \frac{2}{\| \bm{d}(\bm{q}^{(i)}, \bm{q}^{(j)}) \|^4} {\bm{J}^{(i)}}^T \bm{d}(\bm{q}^{(i)}, \bm{q}^{(j)}) \bm{d}(\bm{q}^{(i)}, \bm{q}^{(j)})^T \bm{J}^{(i)} + \frac{1}{ \| \bm{d}(\bm{q}^{(i)}, \bm{q}^{(j)}) \|^2 } {\bm{J}^{(i)}}^T \bm{J}^{(i)} \right) \\
+  &=& - \sum_{\substack{j \in \mathcal{I} \\ j \not= i}} \bm{H}(\bm{q}^{(i)}, \bm{q}^{(j)}; i, i)
 \end{eqnarray}
 \end{subequations}
 ただし，
 \begin{eqnarray}
-  \bm{H}(\bm{q}^{(i)}, \bm{q}^{(j)}) \eqdef
-  - \frac{2}{\| \bm{d}(\bm{q}^{(i)}, \bm{q}^{(j)}) \|^4} \bm{d}(\bm{q}^{(i)}, \bm{q}^{(j)}) \bm{d}(\bm{q}^{(i)}, \bm{q}^{(j)})^T + \frac{1}{ \| \bm{d}(\bm{q}^{(i)}, \bm{q}^{(j)}) \|^2 } \bm{I}
+  \bm{H}(\bm{q}_1, \bm{q}_2; i, j) \eqdef
+  - \frac{2}{\| \bm{d}(\bm{q}_1, \bm{q}_2) \|^4} {\bm{J}^{(i)}}^T \bm{d}(\bm{q}_1, \bm{q}_2) \bm{d}(\bm{q}_1, \bm{q}_2)^T \bm{J}^{(j)} + \frac{1}{ \| \bm{d}(\bm{q}_1, \bm{q}_2) \|^2 } {\bm{J}^{(i)}}^T \bm{J}^{(j)}
 \end{eqnarray}
+また，
+距離計算のための変換関数の二階微分$\frac{\partial \bm{J}^{(i)}}{\partial \bm{q}^{(i)}}$をゼロ行列として近似した．
 \begin{subequations}
 \begin{eqnarray}
   \nabla^2_{ik} F_{\mathit{msc}}(\bm{\hat{q}}; i) &=& \frac{\partial^2 F_{\mathit{msc}}(\bm{\hat{q}}; i)}{\partial \bm{q}^{(i)} \partial \bm{q}^{(k)}} \ \ \ \ k \in \mathcal{I} \land k \not= i \\
-  &=& - \sum_{\substack{j \in \mathcal{I} \\ j \not= i}} \frac{\partial}{\partial \bm{q}^{(k)}} \left( \left\{ \| \bm{d}(\bm{q}^{(i)}, \bm{q}^{(j)}) \|^2 \right\}^{-1} \bm{d}(\bm{q}^{(i)}, \bm{q}^{(j)}) \right) \\
-  &=& - \frac{\partial}{\partial \bm{q}^{(k)}} \left( \left\{ \| \bm{d}(\bm{q}^{(i)}, \bm{q}^{(k)}) \|^2 \right\}^{-1} \bm{d}(\bm{q}^{(i)}, \bm{q}^{(k)}) \right) \\
-  &=& - \left( 2 \left\{ \| \bm{d}(\bm{q}^{(i)}, \bm{q}^{(k)}) \|^2 \right\}^{-2} \bm{d}(\bm{q}^{(i)}, \bm{q}^{(k)}) \bm{d}(\bm{q}^{(i)}, \bm{q}^{(k)})^T - \left\{ \| \bm{d}(\bm{q}^{(i)}, \bm{q}^{(k)}) \|^2 \right\}^{-1} \bm{I} \right) \\
-  &=& - \frac{2}{\| \bm{d}(\bm{q}^{(i)}, \bm{q}^{(k)}) \|^4} \bm{d}(\bm{q}^{(i)}, \bm{q}^{(k)}) \bm{d}(\bm{q}^{(i)}, \bm{q}^{(k)})^T + \frac{1}{ \| \bm{d}(\bm{q}^{(i)}, \bm{q}^{(k)}) \|^2 } \bm{I} \\
-  &=& \bm{H}(\bm{q}^{(i)}, \bm{q}^{(k)})
+  &=& - \sum_{\substack{j \in \mathcal{I} \\ j \not= i}} \frac{\partial}{\partial \bm{q}^{(k)}} \left( \left\{ \| \bm{d}(\bm{q}^{(i)}, \bm{q}^{(j)}) \|^2 \right\}^{-1} {\bm{J}^{(i)}}^T \bm{d}(\bm{q}^{(i)}, \bm{q}^{(j)}) \right) \\
+  &=& - \frac{\partial}{\partial \bm{q}^{(k)}} \left( \left\{ \| \bm{d}(\bm{q}^{(i)}, \bm{q}^{(k)}) \|^2 \right\}^{-1} {\bm{J}^{(i)}}^T \bm{d}(\bm{q}^{(i)}, \bm{q}^{(k)}) \right) \\
+  &\approx& - \left( 2 \left\{ \| \bm{d}(\bm{q}^{(i)}, \bm{q}^{(k)}) \|^2 \right\}^{-2} {\bm{J}^{(k)}}^T \bm{d}(\bm{q}^{(i)}, \bm{q}^{(k)}) \bm{d}(\bm{q}^{(i)}, \bm{q}^{(k)})^T \bm{J}^{(i)} - \left\{ \| \bm{d}(\bm{q}^{(i)}, \bm{q}^{(k)}) \|^2 \right\}^{-1} {\bm{J}^{(i)}}^T \bm{J}^{(k)} \right) \\
+  &=& - \frac{2}{\| \bm{d}(\bm{q}^{(i)}, \bm{q}^{(k)}) \|^4} {\bm{J}^{(k)}}^T \bm{d}(\bm{q}^{(i)}, \bm{q}^{(k)}) \bm{d}(\bm{q}^{(i)}, \bm{q}^{(k)})^T {\bm{J}^{(i)}} + \frac{1}{ \| \bm{d}(\bm{q}^{(i)}, \bm{q}^{(k)}) \|^2 } {\bm{J}^{(i)}}^T \bm{J}^{(k)} \\
+  &=& \bm{H}(\bm{q}^{(i)}, \bm{q}^{(k)}; k, i) \\
+  &=& \bm{H}(\bm{q}^{(k)}, \bm{q}^{(i)}; k, i)
 \end{eqnarray}
 \end{subequations}
 \begin{subequations}
 \begin{eqnarray}
   \nabla^2_{kk} F_{\mathit{msc}}(\bm{\hat{q}}; i) &=& \frac{\partial^2 F_{\mathit{msc}}(\bm{\hat{q}}; i)}{\partial \bm{q}^{(k)2}} \ \ \ \ k \in \mathcal{I} \land k \not= i\\
-  &=& \frac{\partial}{\partial \bm{q}^{(k)}} \left( \left\{ \| \bm{d}(\bm{q}^{(i)}, \bm{q}^{(k)}) \|^2 \right\}^{-1} \bm{d}(\bm{q}^{(i)}, \bm{q}^{(k)}) \right) \\
-  &=& - \left( - \frac{2}{\| \bm{d}(\bm{q}^{(i)}, \bm{q}^{(k)}) \|^4} \bm{d}(\bm{q}^{(i)}, \bm{q}^{(k)}) \bm{d}(\bm{q}^{(i)}, \bm{q}^{(k)})^T + \frac{1}{ \| \bm{d}(\bm{q}^{(i)}, \bm{q}^{(k)}) \|^2 } \bm{I} \right) \\
-  &=& - \bm{H}(\bm{q}^{(i)}, \bm{q}^{(k)})
+  &=& - \frac{\partial}{\partial \bm{q}^{(k)}} \left( \left\{ \| \bm{d}(\bm{q}^{(k)}, \bm{q}^{(i)}) \|^2 \right\}^{-1} {\bm{J}^{(k)}}^T \bm{d}(\bm{q}^{(k)}, \bm{q}^{(i)}) \right) \\
+  &\approx& - \left( - \frac{2}{\| \bm{d}(\bm{q}^{(k)}, \bm{q}^{(i)}) \|^4} {\bm{J}^{(k)}}^T \bm{d}(\bm{q}^{(k)}, \bm{q}^{(i)}) \bm{d}(\bm{q}^{(k)}, \bm{q}^{(i)})^T \bm{J}^{(k)} + \frac{1}{ \| \bm{d}(\bm{q}^{(k)}, \bm{q}^{(i)}) \|^2 } {\bm{J}^{(k)}}^T \bm{J}^{(k)} \right) \\
+  &=& - \bm{H}(\bm{q}^{(k)}, \bm{q}^{(i)}; k, k)
 \end{eqnarray}
 \end{subequations}
 \begin{subequations}
 \begin{eqnarray}
   \nabla^2_{kl} F_{\mathit{msc}}(\bm{\hat{q}}; i) &=& \frac{\partial^2 F_{\mathit{msc}}(\bm{\hat{q}}; i)}{\partial \bm{q}^{(k)} \partial \bm{q}^{(l)}} \ \ \ \ k \in \mathcal{I} \land l \in \mathcal{I} \land k \not= i \land l \not= i \land k \not= l\\
-  &=& \frac{\partial}{\partial \bm{q}^{(l)}} \left( \left\{ \| \bm{d}(\bm{q}^{(i)}, \bm{q}^{(k)}) \|^2 \right\}^{-1} \bm{d}(\bm{q}^{(i)}, \bm{q}^{(k)}) \right) \\
+  &=& - \frac{\partial}{\partial \bm{q}^{(l)}} \left( \left\{ \| \bm{d}(\bm{q}^{(k)}, \bm{q}^{(i)}) \|^2 \right\}^{-1} {\bm{J}^{(k)}}^T \bm{d}(\bm{q}^{(k)}, \bm{q}^{(i)}) \right) \\
   &=& \bm{O}
 \end{eqnarray}
 \end{subequations}
@@ -93,22 +106,22 @@ $N_{\mathit{msc}}$は解候補の個数で，事前に与えるものとする�
   \nabla F_{\mathit{msc}}(\bm{\hat{q}}; i) &=& \frac{\partial F_{\mathit{msc}}(\bm{\hat{q}}; i)}{\partial \bm{\hat{q}}} \\
   &=&
   \begin{pmatrix}
-  \frac{\bm{d}(\bm{q}^{(i)}, \bm{q}^{(1)})}{\| \bm{d}(\bm{q}^{(i)}, \bm{q}^{(1)}) \|^2} \\
+  - \bm{g}(\bm{q}^{(i)}; 1) \\
   \vdots \\
-  \frac{\bm{d}(\bm{q}^{(i)}, \bm{q}^{(i-1)})}{\| \bm{d}(\bm{q}^{(i)}, \bm{q}^{(i-1)}) \|^2} \\
-  - \sum_{\substack{j \in \mathcal{I} \\ j \not= i}} \frac{\bm{d}(\bm{q}^{(i)}, \bm{q}^{(j)})}{\| \bm{d}(\bm{q}^{(i)}, \bm{q}^{(j)}) \|^2} \\
-  \frac{\bm{d}(\bm{q}^{(i)}, \bm{q}^{(i+1)})}{\| \bm{d}(\bm{q}^{(i)}, \bm{q}^{(i+1)}) \|^2} \\
+  - \bm{g}(\bm{q}^{(i)}; i-1) \\
+  - \sum_{\substack{j \in \mathcal{I} \\ j \not= i}} \bm{g}(\bm{q}^{(j)}; i) \\
+  - \bm{g}(\bm{q}^{(i)}; i+1) \\
   \vdots \\
-  \frac{\bm{d}(\bm{q}^{(i)}, \bm{q}^{(N_{\mathit{msc}})})}{\| \bm{d}(\bm{q}^{(i)}, \bm{q}^{(N_{\mathit{msc}})}) \|^2}
+  - \bm{g}(\bm{q}^{(i)}; N_{\mathit{msc}})
   \end{pmatrix} \\
   \bm{v}_{\mathit{msc}} &\eqdef&
   \sum_{i \in \mathcal{I}} \nabla F_{\mathit{msc}}(\bm{\hat{q}}; i) \\
   &=&
-  2
+  - 2
   \begin{pmatrix}
-  - \sum_{\substack{j \in \mathcal{I} \\ j \not= 1}} \frac{\bm{d}(\bm{q}^{(1)}, \bm{q}^{(j)})}{\| \bm{d}(\bm{q}^{(1)}, \bm{q}^{(j)}) \|^2} \\
+  \sum_{\substack{j \in \mathcal{I} \\ j \not= 1}} \bm{g}(\bm{q}^{(j)}; 1) \\
   \vdots \\
-  - \sum_{\substack{j \in \mathcal{I} \\ j \not= N_{\mathit{msc}}}} \frac{\bm{d}(\bm{q}^{(N_{\mathit{msc}})}, \bm{q}^{(j)})}{\| \bm{d}(\bm{q}^{(N_{\mathit{msc}})}, \bm{q}^{(j)}) \|^2} \\
+  \sum_{\substack{j \in \mathcal{I} \\ j \not= N_{\mathit{msc}}}} \bm{g}(\bm{q}^{(j)}; N_{\mathit{msc}}) \\
   \end{pmatrix} \label{eq:sqp-msc-dispersion-matrix}
 \end{eqnarray}
 \end{subequations}
