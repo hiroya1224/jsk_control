@@ -331,4 +331,20 @@ return $\bm{v}_{\mathit{msc}} \in \mathbb{R}^{N_{\mathit{msc}} \mathit{dim}(\bm{
      (send (elt _config-task-list j) :print-status)
      )
    )
+  (:draw-each-configuration
+   (&key
+    (additional-objects)
+    &aux
+    (original-drawing-objects (send *irtviewer* :objects))
+    )
+   (dotimes (i (length _config-task-list))
+     (objects
+      (append (list (send (send (elt _config-task-list i) :instant-config-task) :robot-env))
+              additional-objects))
+     (warning-message 2 "sqp-msc-optimization: draw ~a / ~a~%" (1+ i) (length _config-task-list))
+     (do-until-key
+      (x::window-main-one))
+     )
+   (objects original-drawing-objects)
+   )
   )
