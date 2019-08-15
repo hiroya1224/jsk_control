@@ -95,9 +95,9 @@ Initialize instance
      (send self :init-ending)
      ;; 3. set contact-coords and other settings
      (setq _contact-coords
-           (make-cascoords :parent (car (last rv-ll))))
+           (make-cascoords :name name :parent (car (last rv-ll))))
      (setq _contact-pre-coords
-           (make-cascoords :pos (float-vector 0 0 contact-pre-offset) :parent (car (last rv-ll))))
+           (make-cascoords :name name :pos (float-vector 0 0 contact-pre-offset) :parent (car (last rv-ll))))
      self
      ))
   (:contact-coords
