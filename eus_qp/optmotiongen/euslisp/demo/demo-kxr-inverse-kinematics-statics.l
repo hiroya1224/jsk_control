@@ -13,6 +13,9 @@
   (setq *robot* (kxr-make-robot "kxrl2makabe"))
   (send *robot* :reset-pose)
   (send *robot* :fix-leg-to-coords (make-coords))
+  (setq *ground* (make-cube 1000 1000 500))
+  (send *ground* :newcoords (make-coords :pos (float-vector 0 0 -250)))
+  (send *ground* :worldcoords)
   (create-support-polygon *robot* (send (send *robot* :rleg :end-coords) :parent))
   (create-support-polygon *robot* (send (send *robot* :lleg :end-coords) :parent))
   (setq *robot-env*
@@ -66,16 +69,30 @@
                              )
                    (instance 6d-min-max-contact-constraint
                              :init (float-vector 0 0 0 0 0 0))
-                             ;; :init (float-vector 20 20 20 0 0 0))
+                   ;; :init (float-vector 20 20 20 0 0 0))
                    )
-                  :norm-regular-scale-max 1e-5
+                  :norm-regular-scale-max 1e0
                   :norm-regular-scale-offset 1e-6
+                  :collision-pair-list
+                  (append
+                   (mapcar
+                    #'(lambda (l) (list l *ground*))
+                    (set-difference
+                     (send *robot* :links)
+                     (send-all (send *robot* :legs :end-coords) :parent))
+                    )
+                   (mapcar
+                    #'(lambda (l) (list l (send *robot* :link "torso-top")))
+                    (flatten (send *robot* :legs :links)))
+                   )
+                  :collision-distance-margin 0.002
                   ))
 
   (setq *sqp-opt*
         (instance sqp-optimization :init
                   :config-task *instant-config-task*
                   :pre-process-func pre-process-func
+                  ;; :post-process-func #'(lambda (sqp) (read-line))
                   :post-process-func post-process-func
                   ))
   (send *sqp-opt* :optimize :loop-num 50)
