@@ -709,6 +709,13 @@ set / get $T_i^{\mathit{kin\mathchar`-att}}$
             (elt _kin-attention-coords-list idx)
             ))
      ))
+  (:kin-rotation-type-list
+   ()
+   "
+return rotation type of kinematics task
+   "
+   _kin-rotation-type-list
+   )
   (:contact-target-coords-list
    ()
    "
