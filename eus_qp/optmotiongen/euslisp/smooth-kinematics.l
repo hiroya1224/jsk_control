@@ -1,4 +1,4 @@
-(load "package://eus_qp/optmotiongen/euslisp/util.l")
+(load "./util.l")
 
 
 (defmethod line

@@ -1,5 +1,5 @@
 (load "../surface-configuration-task.l")
-(load "package://eus_qp/optmotiongen/euslisp/sqp-msc-optimization.l")
+(load "../sqp-msc-optimization.l")
 (require "models/arrow-object.l")
 
 

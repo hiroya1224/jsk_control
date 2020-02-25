@@ -1,5 +1,5 @@
-(load "package://eus_qp/optmotiongen/euslisp/util.l")
 (load "./util.l")
+(load "./smooth-kinematics.l")
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;

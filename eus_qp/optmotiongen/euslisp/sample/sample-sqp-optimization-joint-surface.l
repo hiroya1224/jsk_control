@@ -1,6 +1,6 @@
 (load "../joint-surface-configuration-task.l")
-(load "package://eus_qp/optmotiongen/euslisp/sqp-msc-optimization.l")
-(load "package://eus_qp/optmotiongen/euslisp/inverse-kinematics-wrapper.l")
+(load "../sqp-msc-optimization.l")
+(load "../inverse-kinematics-wrapper.l")
 (require "irteus/demo/sample-robot-model.l")
 (require "models/arrow-object.l")
 
