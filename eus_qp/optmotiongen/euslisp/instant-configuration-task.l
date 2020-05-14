@@ -2332,7 +2332,7 @@ update inequality matrix $\bm{C}_{\mathit{col},\theta}, \bm{C}_{\mathit{col,\phi
        (let* ((pair (elt _collision-pair-list i))
               (b1 (elt pair 0))
               (b2 (elt pair 1))
-              (col-ret (pqp-collision-distance b1 b2 :qsize 2))
+              (col-ret (collision-distance b1 b2 :qsize 2))
               (p1 (elt col-ret 1))
               (p2 (elt col-ret 2))
               (c1 (make-cascoords :pos p1 :parent b1))
